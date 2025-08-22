@@ -1,0 +1,16 @@
+id: tamilmv-github
+name: TamilMV Scraper (GitHub)
+description: "TamilMV scraper hosted on GitHub Pages – auto-updated daily"
+language: ta-IN
+type: public
+encoding: UTF-8
+followredirect: true
+testlinktorrent: false
+requestDelay: 2
+links:
+  - https://<your-username>.github.io/tamil-ott-auto/tamilmv_feed.xml
+
+caps:
+  categories:
+    Movies: Movies
+    TV: TV
