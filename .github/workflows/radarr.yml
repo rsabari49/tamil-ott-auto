@@ -2,7 +2,7 @@ name: JustWatch to Radarr
 
 on:
   schedule:
-    - cron: "0 12 * * *"
+    - cron: "0 12 * * *"   # runs daily at 12:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -20,8 +20,8 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: Debug repo contents   # ✅ new step
-        run: ls -R                  # ✅ prints all files so we know where your py file is
+      - name: Debug repo contents   # ✅ list files to confirm path
+        run: ls -R
 
       - name: Run JustWatch to Radarr script
         env:
@@ -29,4 +29,4 @@ jobs:
           RADARR_API_KEY: ${{ secrets.RADARR_API_KEY }}
           RADARR_QUALITY_PROFILE_ID: "2"
           RADARR_LANGUAGE_PROFILE_ID: "1"
-        run: python justwatch_to_radarr.py
+        run: python scripts/justwatch_to_radarr.py   # ✅ fixed path
