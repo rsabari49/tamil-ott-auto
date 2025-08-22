@@ -1,12 +1,12 @@
-name: Tamil OTT Auto Import
+name: JustWatch to Radarr
 
 on:
   schedule:
-    - cron: "0 6 * * *"   # runs daily at 06:00 UTC
-  workflow_dispatch:       # allows manual trigger
+    - cron: "0 12 * * *"   # runs daily at 12:00 UTC
+  workflow_dispatch:       # allow manual run
 
 jobs:
-  run-script:
+  run:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -15,15 +15,16 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: "3.x"
 
       - name: Install dependencies
         run: pip install requests
 
-      - name: Run JustWatch → Radarr Script
+      - name: Run JustWatch to Radarr script
         env:
           RADARR_URL: ${{ secrets.RADARR_URL }}
           RADARR_API_KEY: ${{ secrets.RADARR_API_KEY }}
-          RADARR_QUALITY_PROFILE_ID: "2"   # 1080p profile id in your Radarr
+          RADARR_ROOT: "D:\\Media Server\\Movies"   # you can leave this if your Radarr root is set up
+          RADARR_QUALITY_PROFILE_ID: "2"
           RADARR_LANGUAGE_PROFILE_ID: "1"
-        run: python main.py
+        run: python justwatch_to_radarr.py
