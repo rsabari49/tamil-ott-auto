@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import requests, os
+import requests, os, sys, traceback
 
 RADARR_URL = os.getenv("RADARR_URL")
 API_KEY = os.getenv("RADARR_API_KEY")
@@ -16,6 +16,7 @@ def get_root_folder():
     folders = r.json()
     if not folders:
         raise RuntimeError("❌ No root folders found in Radarr. Please configure one in Radarr UI.")
+    print(f"📂 Using Radarr root folder: {folders[0]['path']}")
     return folders[0]["path"]  # first available root folder
 
 def fetch_justwatch():
@@ -26,6 +27,7 @@ def fetch_justwatch():
         "page": 1,
         "content_types": ["movie"]
     }
+    print("🌐 Fetching JustWatch movies...")
     r = requests.post(url, json=payload)
     r.raise_for_status()
     data = r.json()
@@ -39,6 +41,7 @@ def fetch_justwatch():
         if "ta" not in str(item.get("scoring", "")) and "Tamil" not in str(item.get("original_language", "")):
             continue
         results.append({"title": title, "year": year})
+    print(f"🎬 Found {len(results)} Tamil movies on JustWatch")
     return results
 
 def add_to_radarr(movie, root_folder):
@@ -55,15 +58,23 @@ def add_to_radarr(movie, root_folder):
     url = f"{RADARR_URL}/api/v3/movie"
     r = requests.post(url, json=payload, headers=HEADERS)
     if r.status_code in (200, 201):
-        print("✅ Added:", movie)
+        print(f"✅ Added: {movie['title']} ({movie['year']})")
     else:
-        print("❌ Failed:", r.text)
+        print(f"❌ Failed to add {movie['title']} ({movie['year']}): {r.status_code}")
+        print("Response:", r.text)
 
 def main():
-    root_folder = get_root_folder()
-    movies = fetch_justwatch()
-    for m in movies:
-        add_to_radarr(m, root_folder)
+    try:
+        root_folder = get_root_folder()
+        movies = fetch_justwatch()
+        if not movies:
+            print("⚠️ No Tamil movies found on JustWatch")
+        for m in movies:
+            add_to_radarr(m, root_folder)
+    except Exception as e:
+        print("🚨 Script crashed with error:", str(e))
+        traceback.print_exc()
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
