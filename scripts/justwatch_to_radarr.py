@@ -1,51 +1,69 @@
 #!/usr/bin/env python3
-import requests, os, datetime
+import requests, os
 
 RADARR_URL = os.getenv("RADARR_URL")
 API_KEY = os.getenv("RADARR_API_KEY")
-ROOT = os.getenv("RADARR_ROOT", "/movies")
 QUALITY_PROFILE_ID = int(os.getenv("RADARR_QUALITY_PROFILE_ID", "2"))  # default 1080p
 LANGUAGE_PROFILE_ID = int(os.getenv("RADARR_LANGUAGE_PROFILE_ID", "1"))
 
+HEADERS = {"X-Api-Key": API_KEY}
+
+def get_root_folder():
+    """Fetch the first root folder configured in Radarr"""
+    url = f"{RADARR_URL}/api/v3/rootFolder"
+    r = requests.get(url, headers=HEADERS)
+    r.raise_for_status()
+    folders = r.json()
+    if not folders:
+        raise RuntimeError("❌ No root folders found in Radarr. Please configure one in Radarr UI.")
+    return folders[0]["path"]  # first available root folder
+
 def fetch_justwatch():
+    """Fetch latest Tamil movies from JustWatch (first page, 20 items)"""
     url = "https://apis.justwatch.com/content/titles/en_IN/popular"
-    params = {"body": {"page_size": 20, "page": 1, "content_types": ["movie"]}}
-    r = requests.post(url, json=params)
+    payload = {
+        "page_size": 20,
+        "page": 1,
+        "content_types": ["movie"]
+    }
+    r = requests.post(url, json=payload)
     r.raise_for_status()
     data = r.json()
     results = []
     for item in data.get("items", []):
         title = item.get("title")
-        original_release_year = item.get("original_release_year")
-        if not title: continue
+        year = item.get("original_release_year")
+        if not title:
+            continue
         # crude Tamil filter
         if "ta" not in str(item.get("scoring", "")) and "Tamil" not in str(item.get("original_language", "")):
             continue
-        results.append({"title": title, "year": original_release_year})
+        results.append({"title": title, "year": year})
     return results
 
-def add_to_radarr(movie):
+def add_to_radarr(movie, root_folder):
+    """Send movie request to Radarr"""
     payload = {
         "title": movie["title"],
         "year": movie["year"],
         "qualityProfileId": QUALITY_PROFILE_ID,
-        "rootFolderPath": ROOT,
+        "rootFolderPath": root_folder,
         "monitored": True,
         "addOptions": {"searchForMovie": True},
         "languageProfileId": LANGUAGE_PROFILE_ID
     }
     url = f"{RADARR_URL}/api/v3/movie"
-    headers = {"X-Api-Key": API_KEY}
-    r = requests.post(url, json=payload, headers=headers)
+    r = requests.post(url, json=payload, headers=HEADERS)
     if r.status_code in (200, 201):
-        print("Added:", movie)
+        print("✅ Added:", movie)
     else:
-        print("Failed:", r.text)
+        print("❌ Failed:", r.text)
 
 def main():
+    root_folder = get_root_folder()
     movies = fetch_justwatch()
     for m in movies:
-        add_to_radarr(m)
+        add_to_radarr(m, root_folder)
 
 if __name__ == "__main__":
     main()
